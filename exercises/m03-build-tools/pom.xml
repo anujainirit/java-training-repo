@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.javatraining</groupId>
+        <artifactId>java-training-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>m03-build-tools</artifactId>
+    <packaging>pom</packaging>
+    <name>M03 — Build Tools &amp; Project Setup</name>
+
+    <!--
+        This module is a multi-module Maven project itself.
+        Students must create three child modules:
+          m03-api      — interfaces only, no dependencies
+          m03-impl     — implements m03-api interfaces
+          m03-webapp   — Spring Boot app, depends on m03-impl
+    -->
+    <modules>
+        <module>m03-api</module>
+        <module>m03-impl</module>
+        <module>m03-webapp</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>3.2.5</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

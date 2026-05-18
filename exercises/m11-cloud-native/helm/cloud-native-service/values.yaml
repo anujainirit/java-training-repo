@@ -1,0 +1,50 @@
+# ══════════════════════════════════════════════════════════════
+# EXERCISE M11-T3: Helm Chart
+#
+# Complete this values.yaml and the templates/ directory.
+# The grading script will run: helm lint && helm template
+# ══════════════════════════════════════════════════════════════
+
+# TODO: fill in all FIXME values
+
+replicaCount: 1     # FIXME — should be 2 for production
+
+image:
+  repository: cloud-native-training
+  tag: "latest"
+  pullPolicy: Never
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  host: ""          # FIXME — cloud-native.training.local
+
+config:
+  appEnv: ""        # FIXME — staging
+  logLevel: ""      # FIXME — INFO
+
+resources:
+  requests:
+    memory: ""      # FIXME — 256Mi
+    cpu: ""         # FIXME — 250m
+  limits:
+    memory: ""      # FIXME — 512Mi
+    cpu: ""         # FIXME — 500m
+
+autoscaling:
+  enabled: true
+  minReplicas: 0    # FIXME — 2
+  maxReplicas: 0    # FIXME — 5
+  targetCPUUtilizationPercentage: 0  # FIXME — 70
+
+probes:
+  readiness:
+    path: ""        # FIXME — /api/health
+    initialDelaySeconds: 0   # FIXME — 10
+  liveness:
+    path: ""        # FIXME — /actuator/health
+    initialDelaySeconds: 0   # FIXME — 20

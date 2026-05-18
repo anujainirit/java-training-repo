@@ -1,0 +1,30 @@
+# application.yml — M10 Resilience Exercise
+# TODO: Complete the Resilience4j configuration below
+
+resilience4j:
+  retry:
+    instances:
+      inventoryRetry:
+        max-attempts: 3                  # TODO: verify this is correct
+        wait-duration: 100ms
+        retry-exceptions:
+          - java.io.IOException
+          - org.springframework.web.client.ResourceAccessException
+        # TODO: add exponential backoff config
+        # enable-exponential-backoff: true
+        # exponential-backoff-multiplier: 2
+
+  circuitbreaker:
+    instances:
+      inventoryCircuitBreaker:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5        # open only after 5 calls
+        failure-rate-threshold: 50        # open when 50% fail
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-exceptions:
+          - java.io.IOException
+          - org.springframework.web.client.RestClientException
+          - org.springframework.web.client.HttpServerErrorException

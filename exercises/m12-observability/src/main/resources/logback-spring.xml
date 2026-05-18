@@ -1,0 +1,57 @@
+<!-- ══════════════════════════════════════════════════════════════
+     EXERCISE M12-T1: Structured JSON Logging Configuration
+     Complete the TODOs below to enable JSON output with MDC fields.
+     ══════════════════════════════════════════════════════════════ -->
+<configuration>
+
+    <!-- ── Console appender with JSON encoder ────────────────────── -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <!--
+                TODO: add customFields to include the application name
+                <customFields>{"application":"cloud-native-service","env":"${APP_ENV:-local}"}</customFields>
+            -->
+
+            <!--
+                TODO: include MDC fields in every log line
+                These should appear automatically via LogstashEncoder,
+                but add explicit includeMdcKeyNames for documentation:
+            -->
+            <!-- <includeMdcKeyName>traceId</includeMdcKeyName>   -->
+            <!-- <includeMdcKeyName>requestId</includeMdcKeyName> -->
+
+            <!--
+                TODO: configure timestamp format to ISO-8601
+                <timeZone>UTC</timeZone>
+            -->
+
+            <!-- Shorten class names to avoid noisy log output -->
+            <shortenedLoggerNameLength>36</shortenedLoggerNameLength>
+        </encoder>
+    </appender>
+
+    <!-- ── Spring profile: local — human-readable output ─────────── -->
+    <springProfile name="local">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <!-- TODO: pattern that shows: timestamp | level | traceId | logger | message -->
+                <pattern>%d{HH:mm:ss.SSS} | %highlight(%-5level) | %cyan(%X{traceId}) | %logger{36} | %msg%n</pattern>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- ── Spring profile: staging, prod — JSON output ───────────── -->
+    <springProfile name="staging,prod,default">
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- Reduce noise from framework logs -->
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.hibernate"       level="WARN"/>
+
+</configuration>

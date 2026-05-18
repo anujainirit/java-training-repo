@@ -1,0 +1,157 @@
+# ══════════════════════════════════════════════════════════════
+# EXERCISE M11-T2: Kubernetes Manifests
+#
+# Complete each YAML section marked with TODO.
+# Apply to minikube: kubectl apply -f k8s/
+# Run the grading script: scripts/verify-k8s.sh
+# ══════════════════════════════════════════════════════════════
+
+---
+# ── 1. ConfigMap ──────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-native-config
+  namespace: training
+data:
+  # TODO: add APP_ENV=staging and LOG_LEVEL=INFO
+  APP_ENV: ""       # FIXME
+  LOG_LEVEL: ""     # FIXME
+
+---
+# ── 2. Secret ─────────────────────────────────────────────────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloud-native-secret
+  namespace: training
+type: Opaque
+data:
+  # TODO: base64-encode the value "supersecret123"
+  # echo -n "supersecret123" | base64
+  DB_PASSWORD: ""   # FIXME — base64 encoded value
+
+---
+# ── 3. Deployment ─────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-native-service
+  namespace: training
+  labels:
+    app: cloud-native-service
+spec:
+  replicas: 2       # TODO: set to 2 replicas
+  selector:
+    matchLabels:
+      app: cloud-native-service
+  template:
+    metadata:
+      labels:
+        app: cloud-native-service
+    spec:
+      containers:
+        - name: cloud-native-service
+          image: cloud-native-training:latest
+          imagePullPolicy: Never   # for minikube local image
+          ports:
+            - containerPort: 8080
+          # TODO: inject APP_ENV from ConfigMap
+          env:
+            - name: APP_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: cloud-native-config
+                  key: ""           # FIXME
+            # TODO: inject DB_PASSWORD from Secret
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ""          # FIXME
+                  key: ""           # FIXME
+          # TODO: add readinessProbe on GET /api/health, initialDelaySeconds=10
+          readinessProbe:
+            httpGet:
+              path: ""              # FIXME
+              port: 8080
+            initialDelaySeconds: 0  # FIXME
+            periodSeconds: 5
+          # TODO: add livenessProbe on GET /actuator/health
+          livenessProbe:
+            httpGet:
+              path: ""              # FIXME
+              port: 8080
+            initialDelaySeconds: 0  # FIXME
+            periodSeconds: 10
+          # TODO: set resource requests and limits
+          resources:
+            requests:
+              memory: ""            # FIXME — e.g. 256Mi
+              cpu: ""               # FIXME — e.g. 250m
+            limits:
+              memory: ""            # FIXME — e.g. 512Mi
+              cpu: ""               # FIXME — e.g. 500m
+
+---
+# ── 4. Service ────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-native-service
+  namespace: training
+spec:
+  selector:
+    app: cloud-native-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080   # TODO: confirm this matches containerPort above
+  type: ClusterIP
+
+---
+# ── 5. Ingress ────────────────────────────────────────────────
+# TODO: expose the service externally via Ingress
+# Host: cloud-native.training.local
+# Path: /  → service: cloud-native-service, port: 80
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloud-native-ingress
+  namespace: training
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: ""            # FIXME
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ""  # FIXME
+                port:
+                  number: 0  # FIXME
+
+---
+# ── 6. HorizontalPodAutoscaler ────────────────────────────────
+# TODO: scale between 2–5 replicas when CPU > 70%
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cloud-native-hpa
+  namespace: training
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cloud-native-service
+  minReplicas: 0    # FIXME
+  maxReplicas: 0    # FIXME
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 0  # FIXME
