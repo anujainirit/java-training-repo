@@ -12,7 +12,8 @@
     <name>Java Backend Training — Parent POM</name>
 
     <modules>
-        <module>exercises/m01-java-core</module>
+        <module>exercises/m00-java-core</module>
+        <!--<module>exercises/m01-java-core</module>
         <module>exercises/m02-advanced-java</module>
         <module>exercises/m03-build-tools</module>
         <module>exercises/m04-spring-core</module>
@@ -22,7 +23,7 @@
         <module>exercises/m08-security</module>
         <module>exercises/m09-microservices</module>
         <module>exercises/m10-communication</module>
-        <module>exercises/m13-testing</module>
+        <module>exercises/m13-testing</module>-->
     </modules>
 
     <properties>
