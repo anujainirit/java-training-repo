@@ -146,3 +146,5 @@ Detailed rubric → [`grading/RUBRIC.md`](grading/RUBRIC.md)
 - Open a GitHub Issue using the **"Question / Help"** template
 - Tag your trainer: `@trainer`
 - Do **not** paste solutions in Issues — ask for hints only
+
+
