@@ -108,15 +108,6 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────────────────────
   # JOB 2 — SonarQube Analysis
-  #
-  # WHY we run mvn verify AGAIN here instead of downloading jacoco.xml artifact:
-  #
-  # SonarQube needs BOTH jacoco.xml AND target/classes/*.class files on the
-  # SAME runner to map coverage data to source lines. Downloading only the
-  # jacoco.xml from Job 1 leaves the class files behind on the other runner,
-  # so Sonar receives the XML but shows 0% because it cannot resolve classes.
-  #
-  # Maven cache (restored by setup-java) makes this re-run ~30-60 seconds.
   # ─────────────────────────────────────────────────────────────────────────────
   sonarqube:
     name: 🔬 SonarQube Analysis
@@ -173,13 +164,29 @@ jobs:
         env:
           TESTCONTAINERS_REUSE_ENABLE: 'true'
 
+      # ── THE FIX ──────────────────────────────────────────────────────────────
+      # Secrets are mapped to env vars FIRST, then passed to Maven as shell
+      # variables. Using inline ${{ secrets.X }} directly inside run: commands
+      # causes GitHub to expand them before the shell runs, and if the secret
+      # value contains special characters (like ://) it can produce an empty
+      # string. Mapping to env vars first is the correct and safe approach.
+      # ─────────────────────────────────────────────────────────────────────────
       - name: 🔬 SonarQube Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "Sonar host: $SONAR_HOST_URL"
+          echo "Sonar project: $SONAR_PROJECT_KEY"
+          echo "Sonar org: $SONAR_ORGANIZATION"
           mvn -B sonar:sonar \
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
-            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
+            -Dsonar.organization="$SONAR_ORGANIZATION" \
+            -Dsonar.host.url="$SONAR_HOST_URL" \
+            -Dsonar.token="$SONAR_TOKEN" \
             -Dsonar.qualitygate.wait=true \
             -Dsonar.qualitygate.timeout=300 \
             -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
@@ -187,8 +194,6 @@ jobs:
             -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
             -Dsonar.pullrequest.branch=${{ github.head_ref }} \
             -Dsonar.pullrequest.base=${{ github.base_ref }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ─────────────────────────────────────────────────────────────────────────────
   # JOB 3 — Post grading scorecard comment on PR
