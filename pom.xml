@@ -41,13 +41,10 @@
         <sonar.version>3.11.0.3922</sonar.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
 
-        <!-- SonarQube config — override via CI env vars -->
-        <sonar.projectKey>${project.artifactId}</sonar.projectKey>
-        <sonar.organization>java-training</sonar.organization>
-        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
         <sonar.coverage.jacoco.xmlReportPaths>
-            ${project.build.directory}/site/jacoco/jacoco.xml
+            **/target/site/jacoco/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
         <sonar.qualitygate.wait>true</sonar.qualitygate.wait>
 
