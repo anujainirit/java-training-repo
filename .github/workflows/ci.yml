@@ -1,0 +1,271 @@
+name: 🎓 Java Training CI — Tests | Coverage | SonarQube
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: '21'
+  MAVEN_OPTS: '-Xmx2g -XX:+UseG1GC'
+
+jobs:
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 1 — Build, Test, Coverage Gate (≥85%)
+  # ─────────────────────────────────────────────────────────────────────────────
+  test-and-coverage:
+    name: 🧪 Test & Coverage Gate (≥85%)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: training_test
+          POSTGRES_USER: training
+          POSTGRES_PASSWORD: training123
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: 🐳 Verify Docker (for Testcontainers)
+        run: docker info
+
+      - name: 🔨 Build, Test & Generate JaCoCo Coverage
+        run: |
+          mvn -B verify \
+            --fail-at-end \
+            -Dspring.datasource.url=jdbc:postgresql://localhost:5432/training_test \
+            -Dspring.datasource.username=training \
+            -Dspring.datasource.password=training123 \
+            -Dspring.redis.host=localhost \
+            -Dspring.redis.port=6379
+        env:
+          TESTCONTAINERS_REUSE_ENABLE: 'true'
+
+      - name: 📊 Upload JaCoCo XML
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-reports
+          path: '**/target/site/jacoco/jacoco.xml'
+          retention-days: 1
+
+      - name: 📊 Upload Surefire Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: surefire-reports
+          path: '**/target/surefire-reports/**'
+          retention-days: 7
+
+      - name: 💬 Post Coverage Summary on PR
+        if: github.event_name == 'pull_request'
+        uses: madrapps/jacoco-report@v1.6.1
+        with:
+          paths: '**/target/site/jacoco/jacoco.xml'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: '📊 Code Coverage Report'
+          update-comment: true
+          min-coverage-overall: 85
+          min-coverage-changed-files: 85
+          fail-if-coverage-less-than-overall: true
+          fail-if-coverage-less-than-changed-files: true
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — SonarQube Analysis
+  #
+  # WHY we run mvn verify AGAIN here instead of downloading jacoco.xml artifact:
+  #
+  # SonarQube needs BOTH jacoco.xml AND target/classes/*.class files on the
+  # SAME runner to map coverage data to source lines. Downloading only the
+  # jacoco.xml from Job 1 leaves the class files behind on the other runner,
+  # so Sonar receives the XML but shows 0% because it cannot resolve classes.
+  #
+  # Maven cache (restored by setup-java) makes this re-run ~30-60 seconds.
+  # ─────────────────────────────────────────────────────────────────────────────
+  sonarqube:
+    name: 🔬 SonarQube Analysis
+    runs-on: ubuntu-latest
+    needs: test-and-coverage
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: training_test
+          POSTGRES_USER: training
+          POSTGRES_PASSWORD: training123
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: ⬇️ Checkout (full history for Sonar blame)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: 🔨 Build & Test (produces target/classes + jacoco.xml on same runner)
+        run: |
+          mvn -B verify \
+            --fail-at-end \
+            -Dspring.datasource.url=jdbc:postgresql://localhost:5432/training_test \
+            -Dspring.datasource.username=training \
+            -Dspring.datasource.password=training123 \
+            -Dspring.redis.host=localhost \
+            -Dspring.redis.port=6379
+        env:
+          TESTCONTAINERS_REUSE_ENABLE: 'true'
+
+      - name: 🔬 SonarQube Scan
+        run: |
+          mvn -B sonar:sonar \
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.qualitygate.wait=true \
+            -Dsonar.qualitygate.timeout=300 \
+            -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
+            -Dsonar.java.binaries=**/target/classes \
+            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
+            -Dsonar.pullrequest.branch=${{ github.head_ref }} \
+            -Dsonar.pullrequest.base=${{ github.base_ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 3 — Post grading scorecard comment on PR
+  # ─────────────────────────────────────────────────────────────────────────────
+  grading-summary:
+    name: 🏅 Post Grading Summary
+    runs-on: ubuntu-latest
+    needs: [test-and-coverage, sonarqube]
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+
+      - name: 🏅 Post grading comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const testResult  = '${{ needs.test-and-coverage.result }}';
+            const sonarResult = '${{ needs.sonarqube.result }}';
+            const icon = r => r === 'success' ? '✅' : r === 'skipped' ? '⏭️' : '❌';
+
+            const body = `## 🏅 Automated Grading Report
+
+            | Gate | Status | Weight |
+            |---|---|---|
+            | 🧪 Tests (all pass) | ${icon(testResult)} ${testResult.toUpperCase()} | 40% |
+            | 📊 Coverage ≥ 85% | ${icon(testResult)} ${testResult.toUpperCase()} | 20% |
+            | 🔬 SonarQube (zero issues) | ${icon(sonarResult)} ${sonarResult.toUpperCase()} | 20% |
+            | 👀 Trainer code review | ⏳ Pending | 20% |
+
+            ${testResult === 'success' && sonarResult === 'success'
+              ? '> 🎉 **All automated gates passed!** Waiting for trainer review.'
+              : '> ⚠️ **Some gates failed.** Fix the issues above and push again.'}
+
+            ---
+            _[View full run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})_`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('🏅 Automated Grading Report'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 4 — Final gate: blocks merge if tests or Sonar failed
+  # ─────────────────────────────────────────────────────────────────────────────
+  all-gates-passed:
+    name: ✅ All Gates Passed
+    runs-on: ubuntu-latest
+    needs: [test-and-coverage, sonarqube]
+    if: always()
+    steps:
+      - name: Check all gates
+        run: |
+          if [[ "${{ needs.test-and-coverage.result }}" != "success" ]]; then
+            echo "❌ Tests / Coverage gate FAILED"
+            exit 1
+          fi
+          if [[ "${{ needs.sonarqube.result }}" != "success" ]]; then
+            echo "❌ SonarQube gate FAILED"
+            exit 1
+          fi
+          echo "✅ All gates passed — PR is ready for trainer review"
