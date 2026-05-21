@@ -190,7 +190,6 @@ jobs:
             -Dsonar.qualitygate.wait=true \
             -Dsonar.qualitygate.timeout=300 \
             -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml \
-            -Dsonar.java.binaries=**/target/classes \
             -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
             -Dsonar.pullrequest.branch=${{ github.head_ref }} \
             -Dsonar.pullrequest.base=${{ github.base_ref }}
