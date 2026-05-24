@@ -147,3 +147,4 @@ Detailed rubric → [`grading/RUBRIC.md`](grading/RUBRIC.md)
 - Tag your trainer: `@trainer`
 - Do **not** paste solutions in Issues — ask for hints only
 - Pushing in main to test
+- Pushing in branch to test
