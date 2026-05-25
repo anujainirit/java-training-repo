@@ -14,10 +14,37 @@ import static org.assertj.core.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CalculatorTest {
 
-    @Test @Order(1)
+    @Test
+    @Order(1)
     @DisplayName("Car toll = distance * 2")
     void carBasicToll() {
         Calculator calculator = new Calculator();
-        assertThat(calculator.calculate(10,20)).isEqualTo(30);
+        assertThat(calculator.calculate(10, 20)).isEqualTo(30);
+    }
+
+
+    @Test
+    @Order(2)
+    @DisplayName("Multiply Test")
+    void multiplyTest() {
+        Calculator calculator = new Calculator();
+        assertThat(calculator.multiply(10, 5)).isEqualTo(50);
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("Divide Test")
+    void divideTest() {
+        Calculator calculator = new Calculator();
+        assertThat(calculator.divide(20, 5)).isEqualTo(4);
+    }
+
+    @Test
+    @Order(4)
+    @DisplayName("Divide by One Test")
+    void divideByOneTest() {
+        Calculator calculator = new Calculator();
+        assertThat(calculator.divide(10, 1)).isEqualTo(10);
+
     }
 }
