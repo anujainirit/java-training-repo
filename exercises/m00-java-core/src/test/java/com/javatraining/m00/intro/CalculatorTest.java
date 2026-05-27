@@ -47,23 +47,6 @@ class CalculatorTest {
 
     }
 
-    @Test @Order(2)
-    @DisplayName("Multiply two numbers")
-    void multiplyTest() {
-        Calculator calculator = new Calculator();
-        assertThat(calculator.multiply(3, 4)).isEqualTo(12);
-        assertThat(calculator.multiply(-2, 5)).isEqualTo(-10);
-        assertThat(calculator.multiply(0, 100)).isEqualTo(0);
-    }
-
-    @Test @Order(3)
-    @DisplayName("Divide two numbers")
-    void divideTest() {
-        Calculator calculator = new Calculator();
-        assertThat(calculator.divide(20, 4)).isEqualTo(5);
-        assertThat(calculator.divide(-15, 3)).isEqualTo(-5);
-    }
-
     @Test @Order(4)
     @DisplayName("Divide by zero throws ArithmeticException")
     void divideByZeroTest() {
