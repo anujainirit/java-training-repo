@@ -19,7 +19,9 @@ class CalculatorTest {
     @DisplayName("Car toll = distance * 2")
     void carBasicToll() {
         Calculator calculator = new Calculator();
-        assertThat(calculator.calculate(10, 20)).isEqualTo(30);
+        assertThat(calculator.calculate(10,20)).isEqualTo(30);
+        assertThat(calculator.multiply(10,20)).isEqualTo(200);
+        assertThat(calculator.divide(10,20)).isEqualTo(0);
     }
 
     @Test
