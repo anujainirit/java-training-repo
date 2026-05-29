@@ -11,6 +11,7 @@
     <packaging>pom</packaging>
     <name>Java Backend Training — Parent POM</name>
 
+
     <modules>
         <module>exercises/m00-java-core</module>
     </modules>

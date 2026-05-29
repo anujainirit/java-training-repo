@@ -46,4 +46,12 @@ class CalculatorTest {
         assertThat(calculator.divide(10, 1)).isEqualTo(10);
 
     }
+
+    @Test @Order(4)
+    @DisplayName("Divide by zero throws ArithmeticException")
+    void divideByZeroTest() {
+        Calculator calculator = new Calculator();
+        assertThatThrownBy(() -> calculator.divide(10, 0))
+            .isInstanceOf(ArithmeticException.class);
+    }
 }
