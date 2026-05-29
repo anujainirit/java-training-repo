@@ -1,6 +1,5 @@
 package com.javatraining.m00.intro;
 
-import com.javatraining.m00.intro.Calculator;
 import org.junit.jupiter.api.*;
 
 import static org.assertj.core.api.Assertions.*;
